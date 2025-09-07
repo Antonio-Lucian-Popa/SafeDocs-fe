@@ -41,6 +41,8 @@ export default function Login() {
     }
 
     const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+    console.log("jsdh ", clientId)
     if (!clientId) {
       console.error('Google Client ID not configured');
       return;
