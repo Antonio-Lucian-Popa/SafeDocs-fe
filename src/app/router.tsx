@@ -5,6 +5,8 @@ import Login from '@/pages/Login';
 import Dashboard from '@/pages/Dashboard';
 import DocumentDetails from '@/pages/DocumentDetails';
 import ExpiringSoon from '@/pages/ExpiringSoon';
+import { FolderRoute } from '@/pages/FolderRoute';
+
 
 export function AppRouter() {
   return (
@@ -24,6 +26,9 @@ export function AppRouter() {
           </AppLayout>
         </ProtectedRoute>
       } />
+
+      <Route path="/folders/:folderId" element={<FolderRoute />} />
+
       <Route path="/expiring-soon" element={
         <ProtectedRoute>
           <AppLayout>
