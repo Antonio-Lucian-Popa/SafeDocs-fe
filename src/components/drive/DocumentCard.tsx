@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  FileText, 
-  Image, 
-  File, 
-  MoreVertical, 
-  Download, 
-  Clock, 
+import {
+  FileText,
+  Image,
+  File,
+  MoreVertical,
+  Download,
+  Clock,
   Calendar,
   Tag
 } from 'lucide-react';
@@ -25,6 +25,7 @@ import { documentsApi, downloadBlob } from '@/api/documents';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { fileViewUrl } from '@/api/files';
 
 interface DocumentCardProps {
   document: DocumentResponse;
@@ -32,7 +33,7 @@ interface DocumentCardProps {
 
 const getFileIcon = (mimeType?: string | null) => {
   if (!mimeType) return File;
-  
+
   if (mimeType.startsWith('image/')) return Image;
   if (mimeType === 'application/pdf') return FileText;
   return File;
@@ -40,7 +41,7 @@ const getFileIcon = (mimeType?: string | null) => {
 
 const getFileTypeColor = (mimeType?: string | null) => {
   if (!mimeType) return 'text-muted-foreground';
-  
+
   if (mimeType.startsWith('image/')) return 'text-green-600';
   if (mimeType === 'application/pdf') return 'text-red-600';
   return 'text-blue-600';
@@ -48,16 +49,16 @@ const getFileTypeColor = (mimeType?: string | null) => {
 
 const formatFileSize = (bytes?: number | null) => {
   if (!bytes) return '';
-  
+
   const units = ['B', 'KB', 'MB', 'GB'];
   let size = bytes;
   let unitIndex = 0;
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-  
+
   return `${size.toFixed(1)} ${units[unitIndex]}`;
 };
 
@@ -84,10 +85,23 @@ export function DocumentCard({ document }: DocumentCardProps) {
     },
   });
 
-  const isExpiringSoon = document.expiresAt && 
+  const isExpiringSoon = document.expiresAt &&
     new Date(document.expiresAt).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000;
 
   const isExpired = document.expiresAt && new Date(document.expiresAt) < new Date();
+
+  const openPreview = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Deschide view endpoint într-un tab nou. BE returnează Content-Disposition:inline
+    const file = fileViewUrl(document.id);
+    window.open(file, '_blank', 'noopener,noreferrer');
+  };
+
+  const openThumbnailInNewTab = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const url = `${import.meta.env.VITE_API_BASE || ''}/files/${document.id}/thumbnail?w=1200&h=800`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
 
   return (
     <Card className={cn(
@@ -96,7 +110,7 @@ export function DocumentCard({ document }: DocumentCardProps) {
       isExpiringSoon && !isExpired && 'border-yellow-200 bg-yellow-50 dark:bg-yellow-950/20 dark:border-yellow-800'
     )}>
       <CardContent className="p-4">
-        <div 
+        <div
           className="flex items-start gap-3"
           onClick={() => navigate(`/doc/${document.id}`)}
         >
@@ -162,6 +176,18 @@ export function DocumentCard({ document }: DocumentCardProps) {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {/* Preview */}
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openPreview(e);
+                }}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                Preview
+              </DropdownMenuItem>
+
+              {/* Download */}
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
@@ -172,6 +198,8 @@ export function DocumentCard({ document }: DocumentCardProps) {
                 <Download className="mr-2 h-4 w-4" />
                 {isDownloading ? 'Downloading...' : 'Download'}
               </DropdownMenuItem>
+
+              {/* View details (existing) */}
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation();
@@ -180,6 +208,17 @@ export function DocumentCard({ document }: DocumentCardProps) {
               >
                 <Clock className="mr-2 h-4 w-4" />
                 View Details
+              </DropdownMenuItem>
+
+              {/* optional: open large thumbnail */}
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openThumbnailInNewTab(e);
+                }}
+              >
+                <Image className="mr-2 h-4 w-4" />
+                Open thumbnail
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

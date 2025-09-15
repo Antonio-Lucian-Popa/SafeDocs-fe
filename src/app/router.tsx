@@ -6,6 +6,7 @@ import Dashboard from '@/pages/Dashboard';
 import DocumentDetails from '@/pages/DocumentDetails';
 import ExpiringSoon from '@/pages/ExpiringSoon';
 import { FolderRoute } from '@/pages/FolderRoute';
+import DocumentViewer from '@/pages/DocumentViewer';
 
 
 export function AppRouter() {
@@ -28,6 +29,9 @@ export function AppRouter() {
       } />
 
       <Route path="/folders/:folderId" element={<FolderRoute />} />
+
+      <Route path="/documents/:id/view" element={<DocumentViewer />} />
+
 
       <Route path="/expiring-soon" element={
         <ProtectedRoute>
