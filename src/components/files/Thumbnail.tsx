@@ -1,5 +1,4 @@
-// src/components/files/Thumbnail.tsx
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, ReactNode } from 'react';
 import { httpClient } from '@/api/http';
 import { cn } from '@/lib/utils';
 
@@ -7,27 +6,31 @@ type Props = {
   documentId: string;
   title: string;
   mimeType?: string | null;
-  width?: number;     // px
-  height?: number;    // px
-  className?: string;
-  rounded?: string;   // ex: 'rounded-md'
+  /** Dacă vrei proporții fluide, pune className cu `aspect-[4/3]` și `w-full`,
+   * iar width/height pot rămâne nefolosite. Dacă vrei dimensiuni fixe, folosește width/height. */
+  width?: number;     // px (opțional)
+  height?: number;    // px (opțional)
+  className?: string; // ex: "w-full aspect-[4/3]"
+  rounded?: string;   // ex: "rounded-md"
+  fallbackIcon?: ReactNode; // ⇦ icon-ul afișat dacă nu există preview
 };
 
 export function Thumbnail({
   documentId,
   title,
   mimeType,
-  width = 160,
-  height = 120,
+  width,
+  height,
   className,
   rounded = 'rounded-md',
+  fallbackIcon,
 }: Props) {
   const [src, setSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError]   = useState<string | null>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  // Lazy-load la intrarea în viewport (simplu, fără dependențe)
+  // Lazy-load
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [shouldLoad, setShouldLoad] = useState(false);
 
@@ -54,7 +57,11 @@ export function Thumbnail({
     setError(null);
 
     httpClient.get(`/files/${documentId}/thumbnail`, {
-      params: { w: width, h: height },
+      params: {
+        // dacă nu dai width/height, backend-ul poate avea default; altfel le trimitem
+        ...(width ? { w: width } : {}),
+        ...(height ? { h: height } : {}),
+      },
       responseType: 'blob',
     })
     .then(res => {
@@ -85,23 +92,22 @@ export function Thumbnail({
     return mimeType.startsWith('image/') || mimeType === 'application/pdf';
   }, [mimeType]);
 
+  const style = width || height ? { width: width ?? 'auto', height: height ?? 'auto' } : undefined;
+
   return (
     <div
       ref={containerRef}
-      className={cn(
-        'relative overflow-hidden bg-muted flex items-center justify-center',
-        rounded,
-        className
-      )}
-      style={{ width, height }}
+      className={cn('relative overflow-hidden bg-muted flex items-center justify-center', rounded, className)}
+      style={style}
       aria-label={`Preview ${title}`}
     >
-      {/* Dacă nu este un tip “previewable”, rămâne doar placeholder-ul */}
       {isPreviewable ? (
         loading ? (
           <div className="w-full h-full animate-pulse bg-muted-foreground/10" />
         ) : error || !src ? (
-          <div className="text-xs text-muted-foreground px-2 text-center">no preview</div>
+          <div className="w-full h-full flex items-center justify-center">
+            {fallbackIcon ?? <div className="text-xs text-muted-foreground px-2 text-center">no preview</div>}
+          </div>
         ) : (
           <img
             src={src}
@@ -112,7 +118,9 @@ export function Thumbnail({
           />
         )
       ) : (
-        <div className="text-xs text-muted-foreground px-2 text-center">no preview</div>
+        <div className="w-full h-full flex items-center justify-center">
+          {fallbackIcon ?? <div className="text-xs text-muted-foreground px-2 text-center">no preview</div>}
+        </div>
       )}
     </div>
   );
