@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { fileViewUrl } from '@/api/files';
+import { httpClient } from '@/api/http';
 
 interface DocumentCardProps {
   document: DocumentResponse;
@@ -90,18 +91,37 @@ export function DocumentCard({ document }: DocumentCardProps) {
 
   const isExpired = document.expiresAt && new Date(document.expiresAt) < new Date();
 
-  const openPreview = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    // Deschide view endpoint într-un tab nou. BE returnează Content-Disposition:inline
-    const file = fileViewUrl(document.id);
-    window.open(file, '_blank', 'noopener,noreferrer');
-  };
-
-  const openThumbnailInNewTab = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const url = `${import.meta.env.VITE_API_BASE || ''}/files/${document.id}/thumbnail?w=1200&h=800`;
+ const openPreview = async (e: React.MouseEvent) => {
+  e.stopPropagation();
+  try {
+    const res = await httpClient.get(`/files/${document.id}/view`, {
+      responseType: 'blob',
+    });
+    const blob = res.data as Blob;
+    const url = URL.createObjectURL(blob);
     window.open(url, '_blank', 'noopener,noreferrer');
-  };
+    // opțional: după câteva minute poți face URL.revokeObjectURL(url)
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+ const openThumbnailInNewTab = async (e: React.MouseEvent) => {
+  e.stopPropagation();
+  try {
+    const res = await httpClient.get(
+      `/files/${document.id}/thumbnail?w=1200&h=800`,
+      { responseType: 'blob' }
+    );
+    const blob = res.data as Blob;
+    const objectUrl = URL.createObjectURL(blob);
+    window.open(objectUrl, '_blank', 'noopener,noreferrer');
+    // opțional: URL.revokeObjectURL(objectUrl) după ce nu mai ai nevoie
+  } catch (err) {
+    console.error('Failed to open thumbnail', err);
+  }
+};
+
 
   return (
     <Card className={cn(
