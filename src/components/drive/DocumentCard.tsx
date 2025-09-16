@@ -27,6 +27,7 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import { fileViewUrl } from '@/api/files';
 import { httpClient } from '@/api/http';
+import { Thumbnail } from '../files/Thumbnail';
 
 interface DocumentCardProps {
   document: DocumentResponse;
@@ -91,36 +92,36 @@ export function DocumentCard({ document }: DocumentCardProps) {
 
   const isExpired = document.expiresAt && new Date(document.expiresAt) < new Date();
 
- const openPreview = async (e: React.MouseEvent) => {
-  e.stopPropagation();
-  try {
-    const res = await httpClient.get(`/files/${document.id}/view`, {
-      responseType: 'blob',
-    });
-    const blob = res.data as Blob;
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank', 'noopener,noreferrer');
-    // opțional: după câteva minute poți face URL.revokeObjectURL(url)
-  } catch (err) {
-    console.error(err);
-  }
-};
+  const openPreview = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await httpClient.get(`/files/${document.id}/view`, {
+        responseType: 'blob',
+      });
+      const blob = res.data as Blob;
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      // opțional: după câteva minute poți face URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
- const openThumbnailInNewTab = async (e: React.MouseEvent) => {
-  e.stopPropagation();
-  try {
-    const res = await httpClient.get(
-      `/files/${document.id}/thumbnail?w=1200&h=800`,
-      { responseType: 'blob' }
-    );
-    const blob = res.data as Blob;
-    const objectUrl = URL.createObjectURL(blob);
-    window.open(objectUrl, '_blank', 'noopener,noreferrer');
-    // opțional: URL.revokeObjectURL(objectUrl) după ce nu mai ai nevoie
-  } catch (err) {
-    console.error('Failed to open thumbnail', err);
-  }
-};
+  const openThumbnailInNewTab = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const res = await httpClient.get(
+        `/files/${document.id}/thumbnail?w=1200&h=800`,
+        { responseType: 'blob' }
+      );
+      const blob = res.data as Blob;
+      const objectUrl = URL.createObjectURL(blob);
+      window.open(objectUrl, '_blank', 'noopener,noreferrer');
+      // opțional: URL.revokeObjectURL(objectUrl) după ce nu mai ai nevoie
+    } catch (err) {
+      console.error('Failed to open thumbnail', err);
+    }
+  };
 
 
   return (
@@ -134,9 +135,15 @@ export function DocumentCard({ document }: DocumentCardProps) {
           className="flex items-start gap-3"
           onClick={() => navigate(`/doc/${document.id}`)}
         >
-          <div className={cn('mt-1', fileTypeColor)}>
-            <FileIcon className="h-8 w-8" />
-          </div>
+          <Thumbnail
+            documentId={document.id}
+            title={document.title}
+            mimeType={document.mimeType}
+            width={320}     // ajustează la grid-ul tău
+            height={200}
+            className="w-full"
+            rounded="rounded-t-md"
+          />
 
           <div className="flex-1 min-w-0">
             <h3 className="font-medium text-sm leading-tight truncate">
